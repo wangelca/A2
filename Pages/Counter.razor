@@ -1,0 +1,270 @@
+﻿@page "/Counter"
+@page "/counter"
+@inject Traveless.Classes.SharedDataService sharedDataService
+
+
+
+<h1>Counter</h1>
+<p>Current count: @sharedDataService.FlightCode</p>
+<p>Airline: @sharedDataService.Airline</p>
+<p>Name: @sharedDataService.Name</p>
+<button class="btn btn-primary" @onclick="IncrementCount">Increment</button>
+
+@code {
+    private void IncrementCount()
+    {
+        sharedDataService.FlightCode++;
+    }
+}
+@using Traveless.Classes
+@using System.Collections.Generic
+@using CsvHelper
+@using CsvHelper.Configuration
+@using System.Globalization
+@using System.IO
+@using System.Linq
+@using System
+@using Microsoft.AspNetCore.Components
+
+@inject Traveless.Classes.SharedDataService sharedDataService
+
+@inject NavigationManager NavigationManager
+
+
+<h1 class="text-center">Flight Finder</h1>
+
+<div class="form-group row">
+    <label for="from" class="col-sm-2 col-form-label">From:</label>
+    <div class="col-sm-4">
+        <input type="text" class="form-control" @bind="fromInput" placeholder="Origin">
+    </div>
+    <label for "to" class="col-sm-2 col-form-label">To:</label>
+    <div class="col-sm-4">
+        <input type="text" class="form-control" @bind="toInput" placeholder="Destination">
+    </div>
+    <label for="day" class="col-sm-2 col-form-label">Day:</label>
+    <div class="col-sm-4">
+        <input type="text" class="form-control" @bind="dayInput" placeholder="Departure Day">
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-sm-10 offset-sm-2">
+        <button class="btn btn-primary text-center" @onclick="FindFlights">Find Flights</button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        @if (searchResults != null)
+        {
+            <h3 class="text-center">Flights</h3>
+            @if (searchResults.Count == 0)
+            {
+                <p class="text-center">No flights found for the given criteria.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Flight Number</th>
+                            <th>Airline</th>
+                            <th>Day</th>
+                            <th>Time</th>
+                            <th>Cost</th>
+                            <th>Select</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var flight in searchResults)
+                        {
+                            <tr>
+                                <td>@flight.FlightCode</td>
+                                <td>@flight.Airline</td>
+                                <td>@GetDayOfWeekString(flight.Time)</td>
+                                <td>@flight.Time.ToString("HH:mm")</td>
+                                <td>@flight.Cost</td>
+                                <td>
+                                    <button class="btn btn-primary" @onclick="() => SelectFlight(flight)">Select</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+    </div>
+
+    @if (selectedFlight != null)
+    {
+        <div class="col-md-6">
+            <h3 class="text-center">Selected Flight</h3>
+            <table class="table">
+                <tr>
+                    <th>Flight Code:</th>
+                    <td>@selectedFlight.FlightCode</td>
+                </tr>
+                <tr>
+                    <th>Airline:</th>
+                    <td>@selectedFlight.Airline</td>
+                </tr>
+                <tr>
+                    <th>Day:</th>
+                    <td>@GetDayOfWeekString(selectedFlight.Time)</td>
+                </tr>
+                <tr>
+                    <th>Time:</th>
+                    <td>@selectedFlight.Time.ToString("HH:mm")</td>
+                </tr>
+                <tr>
+                    <th>Cost:</th>
+                    <td>@selectedFlight.Cost</td>
+                </tr>
+            </table>
+            <h3 class="text-center">Reserve</h3>
+            <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" class="form-control" @bind="nameInput" placeholder="Traveler's Name">
+            </div>
+            <div class="form-group">
+                <label for="citizenship">Citizenship:</label>
+                <input type="text" class="form-control" @bind="citizenshipInput" placeholder="Citizenship">
+            </div>
+            <div class="form-group">
+                <button class="btn btn-primary text-center" @onclick="ReserveFlight">Reserve</button>
+            </div>
+        </div>
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(reservationCode))
+{
+    <h3 class="text-center">Reservation Information</h3>
+    <table class="table">
+        <tr>
+            <th>Flight Code:</th>
+            <td>@selectedFlight.FlightCode</td>
+        </tr>
+        <tr>
+            <th>Airline:</th>
+            <td>@selectedFlight.Airline</td>
+        </tr>
+        <tr>
+            <th>Day:</th>
+            <td>@GetDayOfWeekString(selectedFlight.Time)</td>
+        </tr>
+        <tr>
+            <th>Time:</th>
+            <td>@selectedFlight.Time.ToString("HH:mm")</td>
+        </tr>
+        <tr>
+            <th>Cost:</th>
+            <td>@selectedFlight.Cost</td>
+        </tr>
+        <tr>
+            <th>Traveler's Name:</th>
+            <td>@nameInput</td>
+        </tr>
+        <tr>
+            <th>Citizenship:</th>
+            <td>@citizenshipInput</td>
+        </tr>
+        <tr>
+            <th>Reservation Code:</th>
+            <td>@reservationCode</td>
+        </tr>
+    </table>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @errorMessage
+    </div>
+}
+@if (sharedDataService.SelectedFlight != null)
+{
+    <h3 class="text-center">Selected Flight</h3>
+    <table class="table">
+        <tr>
+            <th>Flight Code:</th>
+            <td>@sharedDataService.SelectedFlight.FlightCode</td>
+        </tr>
+        <tr>
+            <th>Airline:</th>
+            <td>@sharedDataService.SelectedFlight.Airline</td>
+        </tr>
+    </table>
+}
+
+@code {
+    private string fromInput;
+    private string toInput;
+    private string dayInput;
+    private string nameInput;
+    private string citizenshipInput;
+    private string reservationCode;
+    private List<Flight> searchResults;
+    private ReservationManager reservationManager;
+    private Flight selectedFlight;
+    private string errorMessage;
+    public class SharedDataService
+    {
+        public int Code { get; set; }
+        public string Airline { get; set; }
+        public string Name { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        reservationManager = new ReservationManager("C:\\Users\\angel\\Desktop\\A2\\Traveless\\Classes\\flights.csv");
+    }
+
+    private void FindFlights()
+    {
+        string from = fromInput;
+        string to = toInput;
+        string day = dayInput;
+        searchResults = reservationManager.GetFlightsByCriteria(from, to, day);
+    }
+
+    private void ReserveFlight()
+    {
+        if (selectedFlight != null)
+        {
+            string travelerName = nameInput;
+            string citizenship = citizenshipInput;
+
+            if (string.IsNullOrEmpty(travelerName) || string.IsNullOrEmpty(citizenship))
+            {
+                errorMessage = "Please provide both traveler's name and citizenship.";
+                return;
+            }
+
+            sharedDataService.SelectedFlight = selectedFlight;
+
+            NavigationManager.NavigateTo("/reservations");
+        }
+    }
+
+    private string GenerateReservationCode()
+    {
+        return Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
+    }
+
+    private string GetDayOfWeekString(DateTime flightTime)
+    {
+        string dayOfWeek = flightTime.DayOfWeek.ToString();
+        return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(dayOfWeek.ToLower());
+    }
+
+    private void SelectFlight(Flight flight)
+    {
+        selectedFlight = flight;
+        nameInput = string.Empty;
+        citizenshipInput = string.Empty;
+        errorMessage = null;
+    }
+}
+
+

@@ -1,0 +1,18 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Traveless.Classes;
+
+namespace Traveless.Classes
+{
+    public class SharedDataService
+    {
+        public Flight SelectedFlight { get; set; }
+
+        public int FlightCode { get; set; }
+        public string Airline { get; set; }
+        public string Name { get; set; }
+    }
+}
