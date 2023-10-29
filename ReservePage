@@ -1,0 +1,200 @@
+@page "/reservations"
+@using System.Collections.Generic
+@using Traveless.Classes
+@page "/fetchdata"
+@inject Traveless.Classes.SharedDataService sharedDataService
+
+
+
+<h1 class="text-center">Find and Update Reservations</h1>
+
+<!-- Input fields -->
+<label for="reservationCodeInput">Reservation Code:</label>
+<input type="text" @bind="reservationCodeInput" />
+<label for="airlineInput">Airline:</label>
+<input type="text" @bind="airlineInput" />
+<label for="fullNameInput">Full Name:</label>
+<input type="text" @bind="fullNameInput" />
+
+<button @onclick="FindReservations">Find Reservations</button>
+
+<h1 class="text-center">Find and Update Reservations</h1>
+
+<div class="form-group row">
+
+    <label for="reservationCodeInput" class="col-sm-2 col-form-label">Reservation Code:</label>
+    <div class="col-sm-4">
+        <input type="text" class="form-control" @bind="reservationCodeInput" placeholder="Reservation Code">
+    </div>
+    <label for="airlineInput" class="col-sm-2 col-form-label">Airline:</label>
+    <div class="col-sm-4">
+        <input type="text" class="form-control" @bind="airlineInput" placeholder="Airline">
+    </div>
+    <label for="fullNameInput" class="col-sm-2 col-form-label">Full Name:</label>
+    <div class="col-sm-4">
+        <input type="text" class="form-control" @bind="fullNameInput" placeholder="Full Name">
+    </div>
+</div>
+<div class="form-group row">
+    <div class="col-sm-10 offset-sm-2">
+        <button class="btn btn-primary text-center" @onclick="FindReservations">Find Reservations</button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+
+        @if (reservations != null)
+        {
+            <h3 class="text-center">Reservations</h3>
+            @if (reservations.Count == 0)
+            {
+                <p class="text-center">No reservations found for the given criteria.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Reservation Code</th>
+                            <th>Flight Code</th>
+                            <th>Traveler Name</th>
+                            <th>Citizenship</th>
+                            <th>Status</th>
+                            <th>Select</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var reservation in reservations)
+                        {
+                            <tr>
+                                <td>@reservation.ReservationCode</td>
+                                <td>@reservation.Flight.FlightCode</td>
+                                <td>@reservation.TravelerName</td>
+                                <td>@reservation.Citizenship</td>
+                                <td>@(reservation.IsActive ? "Active" : "Inactive")</td>
+                                <td>
+                                    <button class="btn btn-primary" @onclick="() => SelectReservation(reservation)">Select</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+    </div>
+
+    @if (selectedReservation != null)
+    {
+        <div class="col-md-6">
+            <h3 class="text-center">Selected Reservation</h3>
+            <table class="table">
+                <tr>
+                    <th>Reservation Code:</th>
+                    <td>@selectedReservation.ReservationCode</td>
+                </tr>
+                <tr>
+                    <th>Flight Code:</th>
+                    <td>@selectedReservation.Flight.FlightCode</td>
+                </tr>
+                <tr>
+                    <th>Traveler Name:</th>
+                    <td>@nameInput</td>
+                </tr>
+                <tr>
+                    <th>Citizenship:</th>
+                    <td>@citizenshipInput</td>
+                </tr>
+                <tr>
+                    <th>Status:</th>
+                    <td>@statusInput</td>
+                </tr>
+            </table>
+        </div>
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success" role="alert">
+        @successMessage
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @errorMessage
+    </div>
+}
+@if (sharedDataService.SelectedFlight != null)
+{
+    <h3 class="text-center">Selected Flight</h3>
+    <table class="table">
+        <tr>
+            <th>Flight Code:</th>
+            <td>@sharedDataService.SelectedFlight.FlightCode</td>
+        </tr>
+        <tr>
+            <th>Airline:</th>
+            <td>@sharedDataService.SelectedFlight.Airline</td>
+        </tr>
+    </table>
+}
+}
+
+
+<div class="col-md-6">
+    @if (sharedDataService.SelectedFlight != null)
+    {
+        <h3 class="text-center">Selected Flight</h3>
+        <table class="table">
+            <tr>
+                <th>Flight Code:</th>
+                <td>@sharedDataService.SelectedFlight.FlightCode</td>
+            </tr>
+            <tr>
+                <th>Airline:</th>
+                <td>@sharedDataService.SelectedFlight.Airline</td>
+            </tr>
+        </table>
+    }
+</div>
+
+@code {
+    private string reservationCodeInput;
+    private string airlineInput;
+    private string fullNameInput;
+    private List<Reservation> reservations;
+    private Reservation selectedReservation;
+    private string nameInput;
+    private string citizenshipInput;
+    private string statusInput;
+    private string successMessage;
+    private string errorMessage;
+    private ReservationManager reservationManager;
+    public class SharedDataService
+    {
+        public int Code { get; set; }
+        public string Airline { get; set; }
+        public string Name { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        reservationManager = new ReservationManager("C:\\Users\\angel\\Desktop\\A2\\Traveless\\Classes\\flights.csv");
+    }
+
+    private void FindReservations()
+    {
+        reservations = reservationManager.FindReservations(reservationCodeInput, airlineInput, fullNameInput);
+    }
+
+    private void SelectReservation(Reservation reservation)
+    {
+        selectedReservation = reservation;
+        nameInput = selectedReservation.TravelerName;
+        citizenshipInput = selectedReservation.Citizenship;
+        statusInput = selectedReservation.IsActive ? "Active" : "Inactive";
+    }
+}
